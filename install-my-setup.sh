@@ -26,20 +26,20 @@ YELLOW='\033[1;33m'
 CYAN='\033[0;36m'
 NC='\033[0m'
 
-info()  { echo -e "${GREEN}[+]${NC} $*"; }
-warn()  { echo -e "${YELLOW}[!]${NC} $*"; }
+info() { echo -e "${GREEN}[+]${NC} $*"; }
+warn() { echo -e "${YELLOW}[!]${NC} $*"; }
 error() { echo -e "${RED}[x]${NC} $*" >&2; }
-header(){ echo -e "\n${CYAN}=== $* ===${NC}\n"; }
+header() { echo -e "\n${CYAN}=== $* ===${NC}\n"; }
 
 confirm() {
-    local answer
-    read -rp "$(echo -e "${YELLOW}[?]${NC} $1 [Y/n] ")" answer
-    [[ -z "$answer" || "$answer" == "y" || "$answer" == "Y" ]]
+  local answer
+  read -rp "$(echo -e "${YELLOW}[?]${NC} $1 [Y/n] ")" answer
+  [[ -z "$answer" || "$answer" == "y" || "$answer" == "Y" ]]
 }
 
 if [[ $EUID -eq 0 ]]; then
-    error "Do not run this script as root. Run as your regular user."
-    exit 1
+  error "Do not run this script as root. Run as your regular user."
+  exit 1
 fi
 
 echo ""
@@ -54,18 +54,17 @@ echo ""
 header "Base packages"
 
 BASE_PACKAGES=(
-    git
-    base-devel
-    fish
-    neovim
-    starship
-    eza
-    kitty
-    ttf-jetbrains-mono-nerd
-    noto-fonts
-    noto-fonts-cjk
-    noto-fonts-emoji
-    wakatime
+  git
+  base-devel
+  fish
+  neovim
+  starship
+  eza
+  kitty
+  ttf-jetbrains-mono-nerd
+  noto-fonts
+  noto-fonts-cjk
+  noto-fonts-emoji
 )
 
 info "Installing base packages..."
@@ -76,14 +75,14 @@ sudo pacman -S --needed --noconfirm "${BASE_PACKAGES[@]}"
 header "AUR helper (yay)"
 
 if command -v yay &>/dev/null; then
-    info "yay already installed"
+  info "yay already installed"
 else
-    info "Installing yay..."
-    TMPDIR="$(mktemp -d)"
-    git clone https://aur.archlinux.org/yay-bin.git "$TMPDIR/yay-bin"
-    (cd "$TMPDIR/yay-bin" && makepkg -si --noconfirm)
-    rm -rf "$TMPDIR"
-    info "yay installed"
+  info "Installing yay..."
+  TMPDIR="$(mktemp -d)"
+  git clone https://aur.archlinux.org/yay-bin.git "$TMPDIR/yay-bin"
+  (cd "$TMPDIR/yay-bin" && makepkg -si --noconfirm)
+  rm -rf "$TMPDIR"
+  info "yay installed"
 fi
 
 # ── 3. iNiR setup ────────────────────────────────────────────────
@@ -91,9 +90,9 @@ fi
 header "iNiR shell"
 
 if confirm "Run iNiR ./setup install?"; then
-    info "Running iNiR installer..."
-    bash "$SCRIPT_DIR/setup" install
-    info "iNiR installed"
+  info "Running iNiR installer..."
+  bash "$SCRIPT_DIR/setup" install
+  info "iNiR installed"
 fi
 
 # ── 4. Custom iNiR config ────────────────────────────────────────
@@ -103,20 +102,20 @@ header "Custom iNiR config"
 CONFIG_DIR="${XDG_CONFIG_HOME:-$HOME/.config}/illogical-impulse"
 # Fall back to inir config dir if illogical-impulse doesn't exist
 if [[ ! -d "$CONFIG_DIR" ]]; then
-    CONFIG_DIR="${XDG_CONFIG_HOME:-$HOME/.config}/inir"
+  CONFIG_DIR="${XDG_CONFIG_HOME:-$HOME/.config}/inir"
 fi
 
 if [[ -d "$CONFIG_DIR" ]]; then
-    if confirm "Apply custom iNiR config? (backs up existing)"; then
-        if [[ -f "$CONFIG_DIR/config.json" ]]; then
-            cp "$CONFIG_DIR/config.json" "$CONFIG_DIR/config.json.bak"
-            warn "Backed up existing config to config.json.bak"
-        fi
-        cp "$SCRIPT_DIR/defaults/config.json" "$CONFIG_DIR/config.json"
-        info "Custom config applied"
+  if confirm "Apply custom iNiR config? (backs up existing)"; then
+    if [[ -f "$CONFIG_DIR/config.json" ]]; then
+      cp "$CONFIG_DIR/config.json" "$CONFIG_DIR/config.json.bak"
+      warn "Backed up existing config to config.json.bak"
     fi
+    cp "$SCRIPT_DIR/defaults/config.json" "$CONFIG_DIR/config.json"
+    info "Custom config applied"
+  fi
 else
-    warn "iNiR config directory not found — run ./setup install first"
+  warn "iNiR config directory not found — run ./setup install first"
 fi
 
 # ── 5. Fish shell config ─────────────────────────────────────────
@@ -124,22 +123,22 @@ fi
 header "Fish shell config"
 
 if confirm "Deploy fish config?"; then
-    FISH_DIR="$HOME/.config/fish"
-    if [[ -d "$FISH_DIR" ]]; then
-        cp -r "$FISH_DIR" "${FISH_DIR}.bak"
-        warn "Backed up existing fish config to fish.bak/"
-    fi
-    mkdir -p "$FISH_DIR"
-    cp -r "$SCRIPT_DIR/dots/fish/"* "$FISH_DIR/"
-    info "Fish config deployed"
+  FISH_DIR="$HOME/.config/fish"
+  if [[ -d "$FISH_DIR" ]]; then
+    cp -r "$FISH_DIR" "${FISH_DIR}.bak"
+    warn "Backed up existing fish config to fish.bak/"
+  fi
+  mkdir -p "$FISH_DIR"
+  cp -r "$SCRIPT_DIR/dots/fish/"* "$FISH_DIR/"
+  info "Fish config deployed"
 
-    if confirm "Set fish as default shell?"; then
-        if ! grep -q "$(command -v fish)" /etc/shells; then
-            echo "$(command -v fish)" | sudo tee -a /etc/shells >/dev/null
-        fi
-        chsh -s "$(command -v fish)"
-        info "Default shell set to fish"
+  if confirm "Set fish as default shell?"; then
+    if ! grep -q "$(command -v fish)" /etc/shells; then
+      echo "$(command -v fish)" | sudo tee -a /etc/shells >/dev/null
     fi
+    chsh -s "$(command -v fish)"
+    info "Default shell set to fish"
+  fi
 fi
 
 # ── 6. Neovim config ─────────────────────────────────────────────
@@ -147,15 +146,15 @@ fi
 header "Neovim config"
 
 if confirm "Deploy nvim config (LazyVim)?"; then
-    NVIM_DIR="$HOME/.config/nvim"
-    if [[ -d "$NVIM_DIR" ]]; then
-        mv "$NVIM_DIR" "${NVIM_DIR}.bak"
-        warn "Backed up existing nvim config to nvim.bak/"
-    fi
-    mkdir -p "$NVIM_DIR"
-    cp -r "$SCRIPT_DIR/dots/nvim/"* "$NVIM_DIR/"
-    info "Neovim config deployed"
-    info "Run 'nvim' to trigger lazy plugin installation"
+  NVIM_DIR="$HOME/.config/nvim"
+  if [[ -d "$NVIM_DIR" ]]; then
+    mv "$NVIM_DIR" "${NVIM_DIR}.bak"
+    warn "Backed up existing nvim config to nvim.bak/"
+  fi
+  mkdir -p "$NVIM_DIR"
+  cp -r "$SCRIPT_DIR/dots/nvim/"* "$NVIM_DIR/"
+  info "Neovim config deployed"
+  info "Run 'nvim' to trigger lazy plugin installation"
 fi
 
 # ── 7. Wallpapers ─────────────────────────────────────────────────
@@ -163,13 +162,13 @@ fi
 header "Wallpapers"
 
 if confirm "Deploy wallpapers?"; then
-    mkdir -p "$HOME/Wallpapers"
-    if [[ -d "$SCRIPT_DIR/dots/wallpapers" ]]; then
-        rsync -a "$SCRIPT_DIR/dots/wallpapers/" "$HOME/Wallpapers/"
-        info "Wallpapers deployed from repo"
-    else
-        warn "dots/wallpapers/ not found in repo, skipping"
-    fi
+  mkdir -p "$HOME/Wallpapers"
+  if [[ -d "$SCRIPT_DIR/dots/wallpapers" ]]; then
+    rsync -a "$SCRIPT_DIR/dots/wallpapers/" "$HOME/Wallpapers/"
+    info "Wallpapers deployed from repo"
+  else
+    warn "dots/wallpapers/ not found in repo, skipping"
+  fi
 fi
 
 # ── Done ──────────────────────────────────────────────────────────
