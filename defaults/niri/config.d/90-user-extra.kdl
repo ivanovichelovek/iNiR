@@ -79,9 +79,9 @@ window-rule {
 spawn-at-startup "planify"
 spawn-at-startup "nekobox"
 
-// ── ReminderBot ─────────────────────────────────────────────────────────────
+// ── Todoist reminders ────────────────────────────────────────────────────────
 window-rule {
-    match title=r"^reminderbot"
+    match title=r"^remind-"
     open-floating true
 }
 
@@ -91,9 +91,9 @@ binds {
     // ═══════════════════════════════════════════════════════════════════════
 
     // Reminder list, add, delete — floating kitty windows.
-    Mod+N repeat=false hotkey-overlay-title="Reminder list" { spawn "kitty" "--title" "reminderbot" "--hold" "fish" "-c" "source $HOME/.local/share/reminderbot/cli/fish_functions.fish; remind list"; }
-    Mod+Ctrl+N repeat=false hotkey-overlay-title="Add reminder" { spawn "kitty" "--title" "reminderbot-add" "--hold" "fish" "-c" "source $HOME/.local/share/reminderbot/cli/remind_add.fish"; }
-    Mod+Ctrl+D repeat=false hotkey-overlay-title="Delete reminder" { spawn "kitty" "--title" "reminderbot-del" "--hold" "fish" "-c" "source $HOME/.local/share/reminderbot/cli/remind_del.fish"; }
+    Mod+N repeat=false hotkey-overlay-title="Reminder list" { spawn "kitty" "--title" "remind-list" "--hold" "fish" "-c" "source $HOME/.local/share/todoist-remind/cli/remind_list.fish"; }
+    Mod+Ctrl+N repeat=false hotkey-overlay-title="Add reminder" { spawn "kitty" "--title" "remind-add" "--hold" "fish" "-c" "source $HOME/.local/share/todoist-remind/cli/remind_add.fish"; }
+    Mod+Ctrl+D repeat=false hotkey-overlay-title="Delete reminder" { spawn "kitty" "--title" "remind-del" "--hold" "fish" "-c" "source $HOME/.local/share/todoist-remind/cli/remind_del.fish"; }
 }
 
 //   window-rule {

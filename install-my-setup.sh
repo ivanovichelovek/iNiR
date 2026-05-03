@@ -9,7 +9,7 @@
 #   1. Installs base packages (git, base-devel, etc.)
 #   2. Installs yay (AUR helper)
 #   3. Runs iNiR ./setup install
-#   4. Deploys ReminderBot CLI scripts (~/.local/share/reminderbot/)
+#   4. Deploys Todoist remind CLI scripts (~/.local/share/todoist-remind/)
 #   5. Applies custom iNiR config
 #   6. Deploys fish shell config
 #   7. Deploys Neovim config (LazyVim)
@@ -97,28 +97,26 @@ if confirm "Run iNiR ./setup install?"; then
   info "iNiR installed"
 fi
 
-# ── 4. ReminderBot CLI ───────────────────────────────────────────
+# ── 4. Todoist remind CLI ────────────────────────────────────────
 
-header "ReminderBot CLI"
+header "Todoist remind CLI"
 
-REMINDERBOT_DEST="$HOME/.local/share/reminderbot"
+TODOIST_DEST="$HOME/.local/share/todoist-remind"
 
-if confirm "Deploy ReminderBot CLI scripts?"; then
-  if ! command -v uv &>/dev/null; then
-    warn "uv not found — installing via pacman..."
-    sudo pacman -S --needed --noconfirm uv
+if confirm "Deploy Todoist remind CLI scripts?"; then
+  if ! command -v jq &>/dev/null; then
+    info "Installing jq..."
+    sudo pacman -S --needed --noconfirm jq
   fi
 
-  mkdir -p "$REMINDERBOT_DEST/cli"
-  cp -r "$SCRIPT_DIR/dots/reminderbot/"* "$REMINDERBOT_DEST/"
-  info "ReminderBot CLI deployed to $REMINDERBOT_DEST"
+  mkdir -p "$TODOIST_DEST/cli"
+  cp -r "$SCRIPT_DIR/dots/todoist-remind/cli/"* "$TODOIST_DEST/cli/"
+  info "Todoist remind CLI deployed to $TODOIST_DEST"
 
-  if [[ ! -f "$REMINDERBOT_DEST/.env" ]]; then
-    cat > "$REMINDERBOT_DEST/.env" <<'EOF'
-API_URL=http://localhost:8000
-API_KEY=
-EOF
-    warn "Created $REMINDERBOT_DEST/.env — fill in API_URL and API_KEY"
+  if [[ ! -f "$TODOIST_DEST/.env" ]]; then
+    cp "$SCRIPT_DIR/dots/todoist-remind/.env.template" "$TODOIST_DEST/.env"
+    warn "Created $TODOIST_DEST/.env"
+    warn "Заполни TODOIST_TOKEN: https://app.todoist.com/app/settings/integrations/developer"
   else
     info ".env already exists, skipped"
   fi

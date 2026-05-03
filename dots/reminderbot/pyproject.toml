@@ -1,8 +1,0 @@
-[project]
-name = "reminderbot-cli"
-version = "0.1.0"
-requires-python = ">=3.10"
-dependencies = [
-    "httpx>=0.27,<1.0",
-    "python-dotenv>=1.0,<2.0",
-]
