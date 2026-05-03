@@ -42,11 +42,11 @@ if test $_ts -le (date +%s)
     echo "Ошибка: дата и время должны быть в будущем"
     exit 1
 end
-set _due_utc (date -d "$_iso_local" -u +"%Y-%m-%dT%H:%M:%SZ")
+set _due_utc (date -u -d "@$_ts" +"%Y-%m-%dT%H:%M:%SZ")
 
-set _body (jq -n --arg c "$_name" --arg d "$_due_utc" '{content: $c, due_datetime: $d}')
+set _body (jq -cn --arg c "$_name" --arg d "$_due_utc" '{content: $c, due_datetime: $d}')
 if test -n "$TODOIST_PROJECT_ID"
-    set _body (echo $_body | jq --arg p "$TODOIST_PROJECT_ID" '. + {project_id: $p}')
+    set _body (echo $_body | jq -c --arg p "$TODOIST_PROJECT_ID" '. + {project_id: $p}')
 end
 
 set _resp (curl -sf -X POST \

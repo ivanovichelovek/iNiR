@@ -26,6 +26,7 @@ workspace "vpn"
 // terminal (kitty)
 window-rule {
     match app-id="kitty"
+    exclude title=r"^remind-"
     open-on-workspace "term"
 }
 
