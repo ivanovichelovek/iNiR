@@ -251,6 +251,14 @@ Singleton {
         onFileChanged: reloadDebounce.restart()
     }
 
+    FileView {
+        id: userExtraWatcher
+        path: Quickshell.env("HOME") + "/.config/niri/config.d/90-user-extra.kdl"
+        watchChanges: true
+
+        onFileChanged: reloadDebounce.restart()
+    }
+
     Timer {
         id: reloadDebounce
         interval: 300

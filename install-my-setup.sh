@@ -8,10 +8,12 @@
 # What this does:
 #   1. Installs base packages (git, base-devel, etc.)
 #   2. Installs yay (AUR helper)
-#   3. Installs shell dependencies (niri, quickshell, fonts, etc.)
-#   4. Runs iNiR ./setup install
-#   5. Deploys personal dotfiles (fish, nvim, wallpapers)
-#   6. Applies custom iNiR config
+#   3. Runs iNiR ./setup install
+#   4. Deploys ReminderBot CLI scripts (~/.local/share/reminderbot/)
+#   5. Applies custom iNiR config
+#   6. Deploys fish shell config
+#   7. Deploys Neovim config (LazyVim)
+#   8. Deploys wallpapers
 #
 # Run as a regular user (script will use sudo where needed).
 
@@ -95,7 +97,34 @@ if confirm "Run iNiR ./setup install?"; then
   info "iNiR installed"
 fi
 
-# ── 4. Custom iNiR config ────────────────────────────────────────
+# ── 4. ReminderBot CLI ───────────────────────────────────────────
+
+header "ReminderBot CLI"
+
+REMINDERBOT_DEST="$HOME/.local/share/reminderbot"
+
+if confirm "Deploy ReminderBot CLI scripts?"; then
+  if ! command -v uv &>/dev/null; then
+    warn "uv not found — installing via pacman..."
+    sudo pacman -S --needed --noconfirm uv
+  fi
+
+  mkdir -p "$REMINDERBOT_DEST/cli"
+  cp -r "$SCRIPT_DIR/dots/reminderbot/"* "$REMINDERBOT_DEST/"
+  info "ReminderBot CLI deployed to $REMINDERBOT_DEST"
+
+  if [[ ! -f "$REMINDERBOT_DEST/.env" ]]; then
+    cat > "$REMINDERBOT_DEST/.env" <<'EOF'
+API_URL=http://localhost:8000
+API_KEY=
+EOF
+    warn "Created $REMINDERBOT_DEST/.env — fill in API_URL and API_KEY"
+  else
+    info ".env already exists, skipped"
+  fi
+fi
+
+# ── 5. Custom iNiR config ────────────────────────────────────────
 
 header "Custom iNiR config"
 
@@ -118,7 +147,7 @@ else
   warn "iNiR config directory not found — run ./setup install first"
 fi
 
-# ── 5. Fish shell config ─────────────────────────────────────────
+# ── 6. Fish shell config ─────────────────────────────────────────
 
 header "Fish shell config"
 
@@ -141,7 +170,7 @@ if confirm "Deploy fish config?"; then
   fi
 fi
 
-# ── 6. Neovim config ─────────────────────────────────────────────
+# ── 7. Neovim config ─────────────────────────────────────────────
 
 header "Neovim config"
 
@@ -157,7 +186,7 @@ if confirm "Deploy nvim config (LazyVim)?"; then
   info "Run 'nvim' to trigger lazy plugin installation"
 fi
 
-# ── 7. Wallpapers ─────────────────────────────────────────────────
+# ── 8. Wallpapers ─────────────────────────────────────────────────
 
 header "Wallpapers"
 

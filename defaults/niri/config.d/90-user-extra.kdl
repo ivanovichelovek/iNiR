@@ -19,6 +19,7 @@ workspace "chat"
 workspace "code"
 workspace "plans"
 workspace "music"
+workspace "vpn"
 //
 // Per-app workspace assignment
 
@@ -32,12 +33,14 @@ window-rule {
 window-rule {
     match app-id="zen"
     open-on-workspace "web"
+    open-maximized true
 }
 
 // chat (ayugram)
 window-rule {
     match app-id="com.ayugram.desktop"
     open-on-workspace "chat"
+    open-maximized true
 }
 
 window-rule {
@@ -45,29 +48,53 @@ window-rule {
     open-on-workspace "code"
 }
 
-// planify
+// nvim runs inside a terminal — matched by window title
+window-rule {
+    match title=r#"(?i)nvim"#
+    open-maximized true
+}
+
+// planify — opens maximized, steals focus (used for startup focus)
 window-rule {
     match app-id="io.github.alainm23.planify"
     open-on-workspace "plans"
+    open-maximized true
+    open-focused true
 }
 
 // music (yandex)
 window-rule {
     match app-id="YandexMusic"
     open-on-workspace "music"
+    open-maximized true
 }
 
-spawn-at-startup "bash" "-c" "
-niri msg action focus-workspace term;
-niri msg action focus-workspace web;
-niri msg action focus-workspace chat;
-niri msg action focus-workspace code;
-niri msg action focus-workspace plans;
-niri msg action focus-workspace music;
-"
+// vpn (nekobox)
+window-rule {
+    match app-id="nekobox"
+    open-on-workspace "vpn"
+    open-maximized true
+}
 
 spawn-at-startup "planify"
-spawn-at-startup "bash" "-c" "sleep 0.2 && niri msg action focus-workspace plans"
+spawn-at-startup "nekobox"
+
+// ── ReminderBot ─────────────────────────────────────────────────────────────
+window-rule {
+    match title=r"^reminderbot"
+    open-floating true
+}
+
+binds {
+    // ═══════════════════════════════════════════════════════════════════════
+    // Tools
+    // ═══════════════════════════════════════════════════════════════════════
+
+    // Reminder list, add, delete — floating kitty windows.
+    Mod+N repeat=false hotkey-overlay-title="Reminder list" { spawn "kitty" "--title" "reminderbot" "--hold" "fish" "-c" "source $HOME/.local/share/reminderbot/cli/fish_functions.fish; remind list"; }
+    Mod+Ctrl+N repeat=false hotkey-overlay-title="Add reminder" { spawn "kitty" "--title" "reminderbot-add" "--hold" "fish" "-c" "source $HOME/.local/share/reminderbot/cli/remind_add.fish"; }
+    Mod+Ctrl+D repeat=false hotkey-overlay-title="Delete reminder" { spawn "kitty" "--title" "reminderbot-del" "--hold" "fish" "-c" "source $HOME/.local/share/reminderbot/cli/remind_del.fish"; }
+}
 
 //   window-rule {
 //       match app-id="firefox"

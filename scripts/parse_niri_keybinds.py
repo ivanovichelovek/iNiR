@@ -402,23 +402,33 @@ def categorize_keybind(kb: dict) -> str:
 
 
 def find_binds_block(content: str) -> str | None:
-    """Find the binds { } block handling nested braces."""
-    match = re.search(r'\bbinds\s*\{', content)
-    if not match:
-        return None
-    
-    start = match.end()
-    depth = 1
-    i = start
-    
-    while i < len(content) and depth > 0:
-        if content[i] == '{':
-            depth += 1
-        elif content[i] == '}':
-            depth -= 1
-        i += 1
-    
-    return content[start:i-1] if depth == 0 else None
+    """Find the first binds { } block. Kept for backwards compatibility."""
+    blocks = find_all_binds_blocks(content)
+    return blocks[0] if blocks else None
+
+
+def find_all_binds_blocks(content: str) -> list[str]:
+    """Find ALL binds { } blocks (e.g. 70-binds.kdl + 90-user-extra.kdl)."""
+    results = []
+    pattern = re.compile(r'\bbinds\s*\{')
+    pos = 0
+    while True:
+        match = pattern.search(content, pos)
+        if not match:
+            break
+        start = match.end()
+        depth = 1
+        i = start
+        while i < len(content) and depth > 0:
+            if content[i] == '{':
+                depth += 1
+            elif content[i] == '}':
+                depth -= 1
+            i += 1
+        if depth == 0:
+            results.append(content[start:i - 1])
+        pos = match.end()
+    return results
 
 
 def resolve_includes(content: str, config_dir: Path) -> str:
@@ -439,11 +449,13 @@ def parse_niri_config(config_path: Path) -> dict:
     
     content = config_path.read_text()
     content = resolve_includes(content, config_path.parent)
-    binds_content = find_binds_block(content)
-    if not binds_content:
+    binds_blocks = find_all_binds_blocks(content)
+    if not binds_blocks:
         return {'error': 'No binds block found', 'children': []}
-    
-    keybinds = parse_keybinds_from_block(binds_content)
+
+    keybinds = []
+    for block in binds_blocks:
+        keybinds.extend(parse_keybinds_from_block(block))
     keybinds_by_category = {}
     
     for kb in keybinds:
