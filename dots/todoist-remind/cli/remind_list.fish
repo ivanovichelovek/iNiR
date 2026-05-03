@@ -12,17 +12,17 @@ if test $status -ne 0
     exit 1
 end
 
-set _count (echo $_resp | jq 'length')
+set _count (echo $_resp | jq '.results | length')
 if test "$_count" = "0"
     echo "Нет активных напоминаний."
     exit 0
 end
 
-set _tasks (echo $_resp | jq -c 'sort_by(.due.datetime // .due.date // "z") | .[]')
+set _tasks (echo $_resp | jq -c '.results | sort_by(.due.date // "z") | .[]')
 set _i 1
 for _task in $_tasks
     set _content (echo $_task | jq -r '.content')
-    set _dt (echo $_task | jq -r '.due.datetime // .due.date // ""')
+    set _dt (echo $_task | jq -r '.due.date // ""')
     if test -n "$_dt"
         set _local (date -d "$_dt" +"%d.%m.%Y %H:%M" 2>/dev/null; or echo $_dt)
     else

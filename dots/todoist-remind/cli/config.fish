@@ -17,5 +17,5 @@ if test -z "$TODOIST_TOKEN"
     exit 1
 end
 
-set -g _API "https://api.todoist.com/rest/v2"
+set -g _API "https://api.todoist.com/api/v1"
 set -g _AUTH "Authorization: Bearer $TODOIST_TOKEN"
