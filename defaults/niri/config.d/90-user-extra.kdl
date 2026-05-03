@@ -12,12 +12,63 @@
 //
 // Examples:
 //
-//   // Named workspaces (sticky, always present)
-//   workspace "browser"
-//   workspace "code"
-//   workspace "music"
+// Named workspaces (sticky, always present)
+workspace "term"
+workspace "web"
+workspace "chat"
+workspace "code"
+workspace "plans"
+workspace "music"
 //
-//   // Per-app workspace assignment
+// Per-app workspace assignment
+
+// terminal (kitty)
+window-rule {
+    match app-id="kitty"
+    open-on-workspace "term"
+}
+
+// browser (zen)
+window-rule {
+    match app-id="zen"
+    open-on-workspace "web"
+}
+
+// chat (ayugram)
+window-rule {
+    match app-id="com.ayugram.desktop"
+    open-on-workspace "chat"
+}
+
+window-rule {
+    match app-id="Alacritty"
+    open-on-workspace "code"
+}
+
+// planify
+window-rule {
+    match app-id="io.github.alainm23.planify"
+    open-on-workspace "plans"
+}
+
+// music (yandex)
+window-rule {
+    match app-id="YandexMusic"
+    open-on-workspace "music"
+}
+
+spawn-at-startup "bash" "-c" "
+niri msg action focus-workspace term;
+niri msg action focus-workspace web;
+niri msg action focus-workspace chat;
+niri msg action focus-workspace code;
+niri msg action focus-workspace plans;
+niri msg action focus-workspace music;
+"
+
+spawn-at-startup "planify"
+spawn-at-startup "bash" "-c" "sleep 0.2 && niri msg action focus-workspace plans"
+
 //   window-rule {
 //       match app-id="firefox"
 //       open-on-workspace "browser"
