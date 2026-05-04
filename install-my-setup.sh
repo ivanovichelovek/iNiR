@@ -120,6 +120,17 @@ if confirm "Deploy Todoist remind CLI scripts?"; then
   else
     info ".env already exists, skipped"
   fi
+
+  # Notification daemon
+  cp "$SCRIPT_DIR/dots/todoist-remind/remind_notify_daemon.py" "$TODOIST_DEST/"
+  chmod +x "$TODOIST_DEST/remind_notify_daemon.py"
+
+  SERVICE_DIR="${XDG_CONFIG_HOME:-$HOME/.config}/systemd/user"
+  mkdir -p "$SERVICE_DIR"
+  cp "$SCRIPT_DIR/dots/todoist-remind/todoist-remind-notify.service" "$SERVICE_DIR/"
+  systemctl --user daemon-reload
+  systemctl --user enable --now todoist-remind-notify.service
+  info "Notification daemon enabled and started"
 fi
 
 # ── 5. Custom iNiR config ────────────────────────────────────────
