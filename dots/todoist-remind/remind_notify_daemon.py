@@ -94,6 +94,7 @@ def parse_due_ts(due: dict) -> float | None:
 
 
 def notify(content: str, due_local: str) -> None:
+    env = {**os.environ, "LANG": "C.UTF-8", "LC_ALL": "C.UTF-8"}
     subprocess.Popen(
         [
             "notify-send",
@@ -102,7 +103,8 @@ def notify(content: str, due_local: str) -> None:
             "--app-name=Напоминание",
             f"⏰ {content}",
             due_local,
-        ]
+        ],
+        env=env,
     )
     if os.path.exists(SOUND):
         subprocess.Popen(["paplay", SOUND])

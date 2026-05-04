@@ -337,7 +337,14 @@ Singleton {
             }
 
             // Popup
-            if (!root.popupInhibited) {
+            // Critical notifications bypass sidebar/notification-center inhibition
+            // but still respect silent mode and game mode suppression
+            const isCritical = notification.urgency === NotificationUrgency.Critical;
+            const inhibited = isCritical
+                ? (root.silent || (GameMode?.active && GameMode?.suppressNotifications))
+                : root.popupInhibited;
+
+            if (!inhibited) {
                 newNotifObject.popup = true;
 
                 const timeout = _timeoutForNotification(notification);
