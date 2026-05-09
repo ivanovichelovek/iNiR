@@ -10,6 +10,7 @@
 #   2. Installs yay (AUR helper)
 #   3. Runs iNiR ./setup install
 #   4. Deploys Todoist remind CLI scripts (~/.local/share/todoist-remind/)
+#   4b. Deploys Yandex Alice skill + Station TTS (optional)
 #   5. Applies custom iNiR config
 #   6. Deploys fish shell config
 #   7. Deploys Neovim config (LazyVim)
@@ -131,6 +132,32 @@ if confirm "Deploy Todoist remind CLI scripts?"; then
   systemctl --user daemon-reload
   systemctl --user enable --now todoist-remind-notify.service
   info "Notification daemon enabled and started"
+fi
+
+# ── 4b. Яндекс Алиса: навык + озвучка на станции ────────────────
+
+if confirm "Deploy Yandex Alice skill + Station TTS (optional)?"; then
+  mkdir -p "$TODOIST_DEST"
+
+  cp "$SCRIPT_DIR/dots/todoist-remind/alice_skill.py" "$TODOIST_DEST/"
+  chmod +x "$TODOIST_DEST/alice_skill.py"
+
+  cp "$SCRIPT_DIR/dots/todoist-remind/station_token.py" "$TODOIST_DEST/"
+  chmod +x "$TODOIST_DEST/station_token.py"
+
+  SERVICE_DIR="${XDG_CONFIG_HOME:-$HOME/.config}/systemd/user"
+  mkdir -p "$SERVICE_DIR"
+  cp "$SCRIPT_DIR/dots/todoist-remind/todoist-remind-alice.service" "$SERVICE_DIR/"
+  systemctl --user daemon-reload
+  systemctl --user enable --now todoist-remind-alice.service
+  info "Alice skill webhook enabled and started on port 5757"
+
+  warn "Следующие шаги:"
+  warn "  1. Установи Cloudflare Tunnel:  yay -S cloudflared"
+  warn "     Запусти туннель:             cloudflared tunnel --url http://localhost:5757"
+  warn "  2. Создай навык на dialogs.yandex.ru, вставь <tunnel-url>/alice как webhook"
+  warn "  3. Добавь YANDEX_SKILL_ID из Диалогов в $TODOIST_DEST/.env"
+  warn "  4. Для озвучки на станции:      python3 $TODOIST_DEST/station_token.py"
 fi
 
 # ── 5. Custom iNiR config ────────────────────────────────────────

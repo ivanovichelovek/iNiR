@@ -267,6 +267,245 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for development setup, code patterns, and
 
 ---
 
+## Личный конфиг
+
+Документация по личным дополнениям поверх iNiR: Todoist-напоминания и голосовой навык Яндекс Алисы.
+
+### Установка личного конфига
+
+```bash
+git clone <repo-url>
+cd my-config/inir
+bash install-my-setup.sh
+```
+
+Скрипт последовательно спрашивает перед каждым шагом:
+
+| Шаг | Что делает |
+|-----|-----------|
+| 1 | Базовые пакеты (git, fish, kitty, шрифты…) |
+| 2 | AUR-хелпер yay |
+| 3 | Установка iNiR shell |
+| 4 | Todoist remind CLI + демон уведомлений |
+| 4b | Навык Яндекс Алисы + озвучка на станции |
+| 5 | Конфиг iNiR |
+| 6 | Конфиг fish |
+| 7 | Конфиг Neovim |
+| 8 | Обои |
+
+---
+
+### Todoist напоминания
+
+#### Первоначальная настройка
+
+Скопировать CLI-скрипты и запустить демон (делает `install-my-setup.sh`, шаг 4):
+
+```bash
+DEST="$HOME/.local/share/todoist-remind"
+mkdir -p "$DEST/cli"
+cp dots/todoist-remind/cli/* "$DEST/cli/"
+cp dots/todoist-remind/remind_notify_daemon.py "$DEST/"
+```
+
+Заполнить токен:
+
+```bash
+# Токен: https://app.todoist.com/app/settings/integrations/developer
+echo "TODOIST_TOKEN=ваш_токен" >> "$DEST/.env"
+
+# Опционально — ограничить конкретным проектом
+echo "TODOIST_PROJECT_ID=xxxxxxxx" >> "$DEST/.env"
+```
+
+Включить демон:
+
+```bash
+cp dots/todoist-remind/todoist-remind-notify.service \
+   "${XDG_CONFIG_HOME:-$HOME/.config}/systemd/user/"
+systemctl --user daemon-reload
+systemctl --user enable --now todoist-remind-notify.service
+```
+
+#### Использование
+
+```bash
+remind_add    # добавить напоминание (интерактивно)
+remind_list   # список активных напоминаний
+remind_del    # удалить напоминание (интерактивно)
+```
+
+Команды берутся из `~/.local/share/todoist-remind/cli/` — добавьте папку в `$PATH` или создайте алиасы.
+
+Демон проверяет Todoist каждые 30 секунд и показывает десктоп-уведомление + воспроизводит звук в момент срабатывания.
+
+---
+
+### Яндекс Алиса
+
+Голосовой интерфейс к Todoist-напоминаниям через навык Яндекс Диалогов.
+
+**Что умеет:**
+- *"ближайшее напоминание"* — Алиса называет ближайшую задачу с датой
+- *"напоминания на сутки"* / *"включи напоминания"* — перечисляет всё за 24 часа
+- При срабатывании напоминания Яндекс Станция **сама произносит** текст (если настроена)
+
+**Работает вдали от дома:** навык (голосовые запросы) — да. Автоозвучка на станции — только дома (локальная сеть).
+
+#### Шаг 1 — Скопировать файлы
+
+```bash
+DEST="$HOME/.local/share/todoist-remind"
+cp dots/todoist-remind/alice_skill.py "$DEST/"
+cp dots/todoist-remind/station_token.py "$DEST/"
+
+cp dots/todoist-remind/todoist-remind-alice.service \
+   "${XDG_CONFIG_HOME:-$HOME/.config}/systemd/user/"
+systemctl --user daemon-reload
+```
+
+#### Шаг 2 — HTTPS-туннель (ngrok)
+
+Яндекс Диалоги требуют доступный из интернета HTTPS-адрес.
+
+1. Зарегистрируйтесь на [ngrok.com](https://ngrok.com)
+2. Установите: `yay -S ngrok`
+3. Добавьте токен (из дашборда ngrok → *Your Authtoken*):
+   ```bash
+   ngrok config add-authtoken ВАШ_ТОКЕН
+   ```
+4. Создайте systemd-сервис:
+   ```bash
+   cat > "${XDG_CONFIG_HOME:-$HOME/.config}/systemd/user/ngrok-alice.service" <<EOF
+   [Unit]
+   Description=ngrok tunnel for Alice skill
+   After=network-online.target
+   Wants=network-online.target
+
+   [Service]
+   ExecStart=/usr/bin/ngrok http 5757
+   Restart=on-failure
+   RestartSec=5
+
+   [Install]
+   WantedBy=default.target
+   EOF
+
+   systemctl --user daemon-reload
+   systemctl --user enable --now ngrok-alice.service
+   ```
+5. Узнайте назначенный URL:
+   ```bash
+   curl -s http://localhost:4040/api/tunnels | \
+     python3 -c "import sys,json; t=json.load(sys.stdin)['tunnels']; print(t[0]['public_url'])"
+   ```
+
+> **Примечание:** URL меняется при каждом перезапуске сервиса. После перезагрузки ПК нужно узнать новый URL командой выше и обновить Webhook URL в настройках навыка на dialogs.yandex.ru.
+
+#### Шаг 3 — Создать навык в Яндекс Диалогах
+
+1. Откройте [dialogs.yandex.ru](https://dialogs.yandex.ru) → *Создать диалог* → *Навык*
+2. Заполните:
+   - **Название:** `Мои напоминания`
+   - **Активационное имя:** `мои напоминания`
+   - **Webhook URL:** URL из шага 2 + `/alice` (например `https://xxxx.ngrok-free.dev/alice`)
+   - **Метод:** POST
+3. Сохраните
+4. Вкладка **Основная информация → О навыке** → скопируйте **ID навыка**
+
+> **Ограничение Яндекс Диалогов:** навык в статусе «Черновик» работает только в браузерном чате (вкладка Тестирование). На реальных устройствах навык доступен только после публикации. Для личного использования проще всего опубликовать как **приватный** навык — в публичный каталог не попадает, доступ выдаётся по email через раздел «Доступ».
+
+#### Шаг 4 — Добавить ID навыка в .env
+
+```bash
+echo "YANDEX_SKILL_ID=xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx" \
+  >> "$HOME/.local/share/todoist-remind/.env"
+```
+
+#### Шаг 5 — Запустить webhook
+
+```bash
+systemctl --user enable --now todoist-remind-alice.service
+
+# Проверить:
+systemctl --user status todoist-remind-alice.service
+```
+
+#### Шаг 6 — Тест в браузере
+
+Вкладка **Тестирование** на dialogs.yandex.ru — введите `ближайшее напоминание` или `напоминания на сутки`.
+
+#### Шаг 7 — Автоозвучка на Яндекс Станции (опционально)
+
+```bash
+# Получить токен (интерактивно — один раз):
+python3 "$HOME/.local/share/todoist-remind/station_token.py"
+
+# Добавить IP станции (смотрите в роутере):
+echo "YANDEX_STATION_IP=192.168.x.x" \
+  >> "$HOME/.local/share/todoist-remind/.env"
+
+# Перезапустить демон:
+systemctl --user restart todoist-remind-notify.service
+```
+
+При срабатывании напоминания станция скажет *"Напоминание: [текст]"* одновременно с десктоп-уведомлением.
+
+---
+
+### Ежедневное использование
+
+После первоначальной настройки всё работает само. Три systemd-сервиса стартуют при входе в систему:
+
+| Сервис | Что делает |
+|--------|-----------|
+| `todoist-remind-notify` | Проверяет Todoist каждые 30 с, показывает уведомления |
+| `todoist-remind-alice` | Webhook для навыка Алисы, порт 5757 |
+| `ngrok-alice` | Туннель — пробрасывает порт 5757 наружу |
+
+---
+
+### Обслуживание
+
+#### Срок жизни токенов
+
+| Токен | Срок | Действие |
+|-------|------|----------|
+| Todoist API | Бессрочный | — |
+| ngrok authtoken | Бессрочный | — |
+| Yandex OAuth (`YANDEX_OAUTH_TOKEN`) | ~1 год | Удалить из `.env`, перезапустить `station_token.py` |
+| JWT станции (`YANDEX_STATION_TOKEN`) | Несколько недель | Перезапустить `station_token.py` |
+
+#### Если станция перестала озвучивать
+
+```bash
+journalctl --user -u todoist-remind-notify.service -n 20
+# Если видите "[station-tts] ..." — запустите:
+python3 ~/.local/share/todoist-remind/station_token.py
+```
+
+#### Полезные команды
+
+```bash
+# Статус всех сервисов
+systemctl --user status todoist-remind-notify todoist-remind-alice ngrok-alice
+
+# Текущий URL туннеля
+curl -s http://localhost:4040/api/tunnels | \
+  python3 -c "import sys,json; t=json.load(sys.stdin)['tunnels']; print(t[0]['public_url'])"
+
+# Логи webhook
+journalctl --user -u todoist-remind-alice -f
+
+# Перезапуск после изменений в .env
+systemctl --user restart todoist-remind-notify todoist-remind-alice
+
+# Диагностика вебхука и API
+uv run ~/.local/share/todoist-remind/debug.py
+```
+
+---
+
 ## Credits
 
 - [**end-4**](https://github.com/end-4/dots-hyprland): original illogical-impulse for Hyprland

@@ -1,0 +1,15 @@
+[Unit]
+Description=Yandex Alice skill webhook (Todoist reminders)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/env python3 %h/.local/share/todoist-remind/alice_skill.py
+Restart=on-failure
+RestartSec=5
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=default.target
